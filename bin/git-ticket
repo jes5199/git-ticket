@@ -43,7 +43,7 @@ USAGE
 end
 
 if list
-  branches = `git branch`.gsub(/^\*?\s+/,'').split(/\n/).grep(/^(?:bug\-)?\d+\-/)
+  branches = `git branch`.gsub(/^\*?\s+/,'').split(/\n/).grep(/^[^\/]*\/[^\/]*\/\d+/)
   puts branches.empty? ? "No ticket branches" : branches
   exit 0
 end
@@ -56,9 +56,10 @@ if branch
   type = doc.search('issue tracker').first['name'].downcase
   title = doc.search('issue subject').first.text.gsub(/\s+/, '-')
 
-  branch_name_root = "#{'bug-' if type=="bug"}#{id}-"
-  branch_name = "#{branch_name_root}#{title}".downcase
-  def branch_name.too_long?; length > 50 end
+  current_branch = `git branch`.split(/\n/).grep(/^\*\s+(.*)/).first.sub(/\*\s+/,"").chomp.gsub('/','-')
+  branch_name_root = "#{type}/#{current_branch}/#{id}-"
+  branch_name = "#{branch_name_root}#{title}".downcase.gsub(/["']/,"")
+  def branch_name.too_long?; length > 100 end
 
 
   if interactive || branch_name.too_long?
@@ -71,7 +72,7 @@ if branch
   exit 0
 end
 
-existing_branch = `git branch`.gsub(/^\*?\s+/,'').split(/\n/).grep(/^(?:bug\-)?#{id}\-/)
+existing_branch = `git branch`.gsub(/^\*?\s+/,'').split(/\n/).grep(/^[^\/]*\/[^\/]*\/#{id}(?:$|[^0-9])/)
 
 if existing_branch.empty?
   puts "No such ticket branch"
